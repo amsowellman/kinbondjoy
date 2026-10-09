@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Play Chess — The Family Guide</title>
+<style>
+  :root{
+    --light:#f0d9b5; --dark:#b58863; --ink:#2a2118; --move:#2e8b2e; --cap:#c03030; --spec:#2a5a8a;
+    --ember:#e0623d; --gold:#d4a44c;
+  }
+  body{font-family:Georgia,'Times New Roman',serif;background:#faf6ef;color:var(--ink);margin:0;padding:24px;line-height:1.55}
+  main{max-width:760px;margin:0 auto}
+  h1{color:var(--ember);font-size:2em;margin:0 0 4px}
+  .tag{color:#7a6a55;font-style:italic;margin-bottom:24px}
+  h2{color:var(--ink);border-bottom:2px solid var(--gold);padding-bottom:4px;margin-top:40px}
+  h3{color:#5a4a35;margin:18px 0 6px}
+  .board{display:inline-grid;grid-template-columns:repeat(8,44px);grid-template-rows:repeat(8,44px);border:4px solid #6b5233;border-radius:4px;margin:10px 0}
+  .sq{display:flex;align-items:center;justify-content:center;font-size:28px;position:relative;box-sizing:border-box}
+  .lt{background:var(--light)} .dk{background:var(--dark)}
+  .mv{box-shadow:inset 0 0 0 3px var(--move)} .cap{box-shadow:inset 0 0 0 3px var(--cap)}
+  .origin{box-shadow:inset 0 0 0 3px var(--gold)}
+  .wp{color:#fdfdf8;text-shadow:0 0 2px #4a3826,0 0 3px #4a3826,0 0 4px #4a3826}
+  .bp{color:#2a2118}
+  .lbl{position:absolute;bottom:1px;right:3px;font-size:9px;color:rgba(42,33,24,.6);font-family:sans-serif}
+  .row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+  .note{max-width:340px}
+  .hint{background:#fdf3e3;border-left:4px solid var(--gold);padding:8px 12px;border-radius:4px;margin:10px 0;max-width:660px}
+  table{border-collapse:collapse;margin:10px 0}
+  td,th{border:1px solid #c9b89a;padding:6px 12px;text-align:left}
+  th{background:var(--dark);color:#fff}
+  .small{font-size:.85em;color:#7a6a55}
+  .kicker{color:var(--ember);font-weight:bold}
+  .legend span{display:inline-block;margin-right:14px;font-size:.9em}
+</style>
+</head>
+<body>
+<main>
+<h1>How to Play Chess</h1>
+<div class="tag">The Family Guide — board setup, how every piece moves, and how to win</div>
+
+<h2>The Objective</h2>
+<p>Two players: <span class="kicker">White</span> always moves first, then players take turns. The goal is to
+<b>checkmate</b> the enemy king — attack it so it is trapped with no escape. You never actually
+"take" the king; the game ends the moment checkmate happens. Games can also end in a <b>draw</b> (more below).</p>
+<div class="hint">💡 The golden rule for new players: <b>protect your king, and give every move a job</b> — develop a piece, control the center, or defend something. Random pawn-grabbing loses games.</div>
+
+<h2>Setting Up the Board</h2>
+<div class="row">
+  <div class="board" id="setup"></div>
+  <div class="note">
+    <h3>Three setup rules</h3>
+    <p>1. <b>The bottom-right corner square must be light-colored.</b> That fixes the board's direction for both players.</p>
+    <p>2. <b>Rooks live in the corners</b>, knights beside them, then bishops, then the queen and king on the two middle squares.</p>
+    <p>3. <b>"Queen on her own color"</b> — the white queen on a light square, the black queen on a dark square. If your queens face each other, the setup is correct.</p>
+    <p class="small">All sixteen pawns fill the row in front of the big pieces. White always sits at the bottom in these diagrams.</p>
+  </div>
+</div>
+
+<h2>How Each Piece Moves</h2>
+<div class="legend"><span style="color:var(--move)">▣ green outline — where it may go</span><span style="color:var(--cap)">▣ red outline — how it captures</span><span style="color:var(--gold)">▣ gold box — the piece making the move</span></div>
+<p class="small">Remember: nothing may jump over other pieces — except the knight.</p>
+
+<h3>♙ The Pawn — the little soldier</h3>
+<div class="row">
+  <div class="board" id="pawn"></div>
+  <div class="note">
+    <p>Pawns move <b>straight forward one square</b> — or <b>two squares on their very first move</b>. They capture <b>diagonally forward</b>, never straight ahead. Pawns never move backward.</p>
+    <p>When a pawn reaches the far end of the board it <b>promotes</b>: it turns into any other piece — almost always a queen.</p>
+  </div>
+</div>
+
+<h3>♖ The Rook — the tower</h3>
+<div class="row">
+  <div class="board" id="rook"></div>
+  <div class="note"><p>The rook slides <b>horizontally or vertically</b> — any distance in a straight line, as long as nothing blocks the way. Powerful on open files, and essential for castling.</p></div>
+</div>
+
+<h3>♗ The Bishop — the diagonal runner</h3>
+<div class="row">
+  <div class="board" id="bishop"></div>
+  <div class="note"><p>The bishop slides <b>diagonally only</b>, any distance. Each bishop stays on its own color for the whole game — one of yours lives on light squares, the other on dark squares.</p></div>
+</div>
+
+<h3>♕ The Queen — the strongest piece</h3>
+<div class="row">
+  <div class="board" id="queen"></div>
+  <div class="note"><p>The queen combines the rook and the bishop: <b>any distance, straight or diagonal</b>. She is worth more than everything else on the board — bring her out carefully, not too early.</p></div>
+</div>
+
+<h3>♘ The Knight — the jumper</h3>
+<div class="row">
+  <div class="board" id="knight"></div>
+  <div class="note">
+    <p>The knight moves in an <b>L-shape: two squares in one direction, then one square sideways</b>. It is the only piece that can <b>jump over anything</b> in its way. All eight of its landing squares from the middle of the board are outlined here.</p>
+    <p class="small">Memory trick: a knight always lands on the opposite color from the square it left.</p>
+  </div>
+</div>
+
+<h3>♔ The King — the one you protect</h3>
+<div class="row">
+  <div class="board" id="king"></div>
+  <div class="note">
+    <p>The king moves <b>one square in any direction</b>. Slow — but if he falls, everything falls.</p>
+    <p><b>Castling:</b> once per game, king and rook move together. The king slides two squares toward a rook, and the rook hops to the square on the king's far side. It requires: neither piece has moved yet, no pieces between them, the king is not in check, and he passes through no attacked square. Castling tucks the king into safety and wakes up the rook — good players do it early.</p>
+  </div>
+</div>
+
+<h2>Special Moves</h2>
+<h3>Promotion</h3>
+<p>A pawn that marches all the way to the far rank turns into a queen (or a rook, bishop, or knight — but you'll want the queen). This is why one advanced pawn can win an endgame all by itself.</p>
+<h3>En passant — the rare one</h3>
+<p>If an enemy pawn uses its two-square first move to land <i>beside</i> your pawn, your pawn may capture it "in passing," landing diagonally behind it — but only on your very next move. Know that it exists; you'll rarely need it early on.</p>
+
+<h2>The Objective: Check, Checkmate, and Draws</h2>
+<p><b>Check</b> = your king is under attack. You must answer immediately, three possible ways:
+① <b>Move</b> the king to a safe square, ② <b>Block</b> the attack with another piece, or ③ <b>Capture</b> the attacker.</p>
+<p><b>Checkmate</b> = the king is attacked and none of those three escapes exist. The game ends. Remember: you may never move your king into an attacked square — not even to capture — and you cannot castle while in check.</p>
+<p><b>Draws:</b> <b>Stalemate</b> — the player to move has no legal moves but is <i>not</i> in check: the game is a draw. Be careful — with a big material lead, accidentally stalemating your opponent throws away a won game! Other draws: the same position repeats three times, fifty moves pass with no capture or pawn move, or neither side has enough material to force mate (for example, king and bishop against a lone king).</p>
+
+<h2>What Pieces Are Worth — for trading decisions</h2>
+<table>
+<tr><th>Piece</th><th>Value</th><th>How to think of it</th></tr>
+<tr><td>♟ Pawn</td><td>1</td><td>foot soldier; becomes gold in the endgame</td></tr>
+<tr><td>♞ Knight</td><td>3</td><td>tricky jumper, loves closed positions</td></tr>
+<tr><td>♝ Bishop</td><td>3</td><td>long diagonals, loves open boards</td></tr>
+<tr><td>♜ Rook</td><td>5</td><td>owns open files, dominates endgames</td></tr>
+<tr><td>♕ Queen</td><td>9</td><td>the boss — never loses her for cheap</td></tr>
+<tr><td>♔ King</td><td>the game</td><td>priceless — the whole point</td></tr>
+</table>
+<p class="small">So: trading a bishop (3) for a rook (5) wins material; trading a queen (9) for a knight (3) loses badly.</p>
+
+<h2>First-Game Strategy for Young Players</h2>
+<p>1. <b>Control the center</b> — the four middle squares are the high ground.<br>
+2. <b>Develop every piece</b> — don't move the same piece twice while others still sit at home.<br>
+3. <b>Castle early</b> — a safe king lets everything else play freely.<br>
+4. <b>Don't hang pieces</b> — before every move ask: "what does this leave undefended?"<br>
+5. <b>Connect your rooks</b> — once the pieces between them move away, they guard each other.<br>
+6. <b>Count attackers and defenders</b> on any square before capturing.<br>
+7. <b>Pawns are gold in the endgame</b> — when the board empties, race them toward promotion.</p>
+
+<div class="hint" style="margin-top:28px">♟ For the beautiful carved set: agree before the game which color is which (carved pieces don't always shout "white vs. black") — usually the lighter wood plays White. Put the queens on their own color before the first move!</div>
+
+<p class="small" style="margin-top:30px">Made for the family · 2026 · diagrams follow the official starting positions and movement rules.</p>
+</main>
+
+<script>
+const GLYPHS={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+function idx(sq){const f=sq.charCodeAt(0)-97;const rk=parseInt(sq[1]);return (8-rk)*8+f;}
+function cellsFrom(spec){
+  const cells=new Array(64).fill(null);
+  for(const s in spec){cells[idx(s)]=spec[s];}
+  return cells;
+}
+function renderBoard(id,cells){
+  const el=document.getElementById(id);let h='';
+  for(let i=0;i<64;i++){
+    const f=i%8, rk=7-Math.floor(i/8);
+    const light=((f+rk)%2)===1;
+    const c=cells[i]||{};
+    const mark=c.mark?(' '+c.mark):'';
+    const glyph=c.p?('<span class="'+(c.p[0]==='w'?'wp':'bp')+'">'+GLYPHS[c.p]+'</span>'):'';
+    const lbl=(rk===0&&f===0)?'<span class="lbl">a1</span>':((rk===0&&f===7)?'<span class="lbl">h1</span>':'');
+    h+='<div class="sq '+(light?'lt':'dk')+mark+'">'+glyph+lbl+'</div>';
+  }
+  el.innerHTML=h;
+}
+// ---- setup board ----
+const back=['R','N','B','Q','K','B','N','R'];
+const setupSpec={};
+'a b c d e f g h'.split(' ').forEach((f,i)=>{
+  setupSpec[f+'8']={p:'b'+back[i]}; setupSpec[f+'1']={p:'w'+back[i]};
+  setupSpec[f+'7']={p:'bP'};      setupSpec[f+'2']={p:'wP'};
+});
+renderBoard('setup',cellsFrom(setupSpec));
+// ---- pawn diagram: white pawn e2, first-move e3/e4, captures d3/f3 ----
+renderBoard('pawn',cellsFrom({
+  e2:{p:'wP',mark:'origin'}, e3:{mark:'mv'}, e4:{mark:'mv'},
+  d3:{mark:'cap'}, f3:{mark:'cap'}
+}));
+// ---- rook: d4, rank+file ----
+const rookSpec={d4:{p:'wR',mark:'origin'}};
+'a b c e f g h'.split(' ').forEach(f=>rookSpec[f+'4']={mark:'mv'});
+for(let r=1;r<=8;r++){if(r!==4)rookSpec['d'+r]={mark:'mv'};}
+renderBoard('rook',cellsFrom(rookSpec));
+// ---- bishop: d4, diagonals ----
+const bishSpec={d4:{p:'wB',mark:'origin'}};
+[['c5','b6','a7'],['e5','f6','g7','h8'],['c3','b2','a1'],['e3','f2','g1']].forEach(line=>line.forEach(s=>bishSpec[s]={mark:'mv'}));
+renderBoard('bishop',cellsFrom(bishSpec));
+// ---- queen: d4, rook+bishop moves ----
+const qSpec={d4:{p:'wQ',mark:'origin'}};
+'a b c e f g h'.split(' ').forEach(f=>qSpec[f+'4']={mark:'mv'});
+for(let r=1;r<=8;r++){if(r!==4)qSpec['d'+r]={mark:'mv'};}
+[['c5','b6','a7'],['e5','f6','g7','h8'],['c3','b2','a1'],['e3','f2','g1']].forEach(line=>line.forEach(s=>qSpec[s]={mark:'mv'}));
+renderBoard('queen',cellsFrom(qSpec));
+// ---- knight: e4, 8 L-targets ----
+renderBoard('knight',cellsFrom({
+  e4:{p:'wN',mark:'origin'},
+  c3:{mark:'mv'},c5:{mark:'mv'},d2:{mark:'mv'},d6:{mark:'mv'},
+  f2:{mark:'mv'},f6:{mark:'mv'},g3:{mark:'mv'},g5:{mark:'mv'}
+}));
+// ---- king: e4, 8 adjacent ----
+renderBoard('king',cellsFrom({
+  e4:{p:'wK',mark:'origin'},
+  d3:{mark:'mv'},d4:{mark:'mv'},d5:{mark:'mv'},e3:{mark:'mv'},
+  e5:{mark:'mv'},f3:{mark:'mv'},f4:{mark:'mv'},f5:{mark:'mv'}
+}));
+</script>
+</body>
+</html>
