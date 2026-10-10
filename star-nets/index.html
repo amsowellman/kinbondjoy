@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>⭐ STAR NETS ⭐ — Made for Captain Liam</title>
+<style>
+  html, body { margin:0; padding:0; overflow:hidden; background:#0b1030; height:100%; }
+  canvas { display:block; touch-action:none; -webkit-user-select:none; user-select:none;
+           -webkit-tap-highlight-color:transparent; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+/* ============================================================
+   STAR NETS — made for Captain Liam
+   Defend the glowing Star Bed: fling capture-nets at lost baby
+   critters, net them sleepy, and fill the Pet Sandbox with friends.
+   Single-file, no dependencies, canvas + WebAudio only.
+   ============================================================ */
+
+// ---------------- constants ----------------
+var TAU = Math.PI * 2;
+var MAX_UP = 10 * 1024 * 1024; // (kept for parity; not used for canvas games)
+var SAVE_ZOO = 'starnets_zoo_v1';
+var SAVE_BEST = 'starnets_best_v1';
+var SAVE_MUTE = 'starnets_mute_v1';
+var SAVE_HOWTO = 'starnets_howto_v1';
+
+// Species table — the 10 species from the build prompt (+ Mama Chonk special).
+// hp>1 means multiple net hits. stars = coin value on catch.
+var SPECIES = {
+  Bloop:      { color:'#7ec8ff', r:22, hp:1, stars:10, speed:0.55, desc:'slow floater' },
+  Zippy:      { color:'#ffd166', r:17, hp:1, stars:10, speed:1.15, desc:'fast zig-zag' },
+  Chonk:      { color:'#ff9e7d', r:34, hp:2, stars:20, speed:0.4,  desc:'needs 2 nets' },
+  Spiker:     { color:'#b388ff', r:21, hp:1, stars:15, speed:0.6,  desc:'side-net only' },
+  Invisibloop:{ color:'#8ef0e2', r:20, hp:1, stars:15, speed:0.55, desc:'fades in/out' },
+  Fuzzy:      { color:'#ffb3c1', r:20, hp:1, stars:12, speed:0.6,  desc:'drops 2 bonus stars' },
+  Glimmer:    { color:'#fff176', r:17, hp:1, stars:30, speed:0.7,  desc:'worth 30 stars' },
+  Twinling:   { color:'#80deea', r:20, hp:1, stars:10, speed:0.65, desc:'splits into 2 Bloops' },
+  Drowsy:     { color:'#a5d6a7', r:24, hp:1, stars:15, speed:0.3,  desc:'already half asleep' },
+  Grandpa:    { color:'#ce93d8', r:58, hp:3, stars:100, speed:0.3, desc:'BOSS — 3 net hits' },
+  MamaChonk:  { color:'#ff8a80', r:40, hp:2, stars:30, speed:0.35, desc:'drops 3 baby Bloops' }
+};
+// Which species may appear from which wave (guarantees all 10 show up).
+var UNLOCK = [
+  ['Bloop', 1], ['Zippy', 2], ['Chonk', 3], ['Spiker', 4],
+  ['Invisibloop', 6], ['Fuzzy', 7], ['Twinling', 8], ['Drowsy', 9], ['Glimmer', 10]
+];
+var UPGRADES = [
+  { key:'big',    name:'Bigger Nets',    cost:50,  blurb:'wider capture radius' },
+  { key:'double', name:'Double Launcher',cost:150, blurb:'2 nets per fling' },
+  { key:'turret', name:'Stun Turret',    cost:200, blurb:'auto-stuns every 5s' },
+  { key:'shield', name:'Bed Force-Field',cost:120, blurb:'absorbs 1 nibble/wave' }
+];
+
+// ---------------- game state (one object) ----------------
+var G = {
+  screen: 'title',        // title | howto | play | shop | sandbox | over | milestone
+  wave: 1, stars: 0, score: 0, caught: 0,
+  bedHp: 100, bedMax: 100,
+  critters: [], nets: [], parts: [], toasts: [],
+  queue: [],              // pending spawns for this wave
+  waveActive: false,
+  pull: null,             // {sx,sy,cx,cy} while aiming
+  up: { big:false, double:false, turret:false, shield:false },
+  turretTimer: 0, shieldUsed: false, beam: null,
+  shake: 0, t: 0,
+  zoo: {},                // species -> count (persisted)
+  best: { waves:0, score:0 },
+  muted: false, seenHow: false,
+  milestoneTimer: 0, newSpeciesToast: 0, newSpeciesName: '',
+  sandboxPals: [],        // animated zoo residents on the sandbox screen
+  howTimer: 0,
+  flash: 0
+};
+
+// ---------------- canvas ----------------
+var cv = document.getElementById('c');
+var ctx = cv.getContext('2d');
+var W = 0, H = 0, DPR = 1;
+var starField = [];
+var ROCKS = [];
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // star field
+  starField = [];
+  for (var i = 0; i < 90; i++) {
+    starField.push({ x:Math.random()*W, y:Math.random()*H*0.9,
+                     r:Math.random()*1.6+0.4, tw:Math.random()*TAU });
+  }
+  // moon rocks critters bounce off (recomputed on resize)
+  ROCKS = [
+    { x:W*0.22, y:H*0.42, r:Math.min(W,H)*0.09 },
+    { x:W*0.78, y:H*0.52, r:Math.min(W,H)*0.08 },
+    { x:W*0.5,  y:H*0.28, r:Math.min(W,H)*0.06 }
+  ];
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------------- storage ----------------
+function loadJSON(key, fallback) {
+  try {
+    var raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) { return fallback; }
+}
+function saveJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+}
+G.zoo = loadJSON(SAVE_ZOO, {});
+G.best = loadJSON(SAVE_BEST, { waves:0, score:0 });
+G.muted = loadJSON(SAVE_MUTE, false);
+G.seenHow = loadJSON(SAVE_HOWTO, false);
+
+// ---------------- audio (WebAudio, all generated) ----------------
+var AC = null;
+function audio() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(freq, dur, type, vol, slideTo, when) {
+  if (G.muted) return;
+  var ac = audio(); if (!ac) return;
+  var t0 = ac.currentTime + (when || 0);
+  var o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(slideTo, 1), t0 + dur);
+  g.gain.setValueAtTime(vol || 0.15, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+var SFX = {
+  whoosh: function() { tone(220, 0.25, 'sine', 0.10, 90); },
+  pop:    function() { tone(520, 0.09, 'sine', 0.18, 900); tone(760, 0.12, 'triangle', 0.10, 1200, 0.03); },
+  tink:   function() { tone(1200, 0.06, 'square', 0.05, 1000); },
+  chime:  function() { tone(660, 0.18, 'sine', 0.15); tone(880, 0.22, 'sine', 0.15, null, 0.14); tone(1320, 0.3, 'sine', 0.12, null, 0.28); },
+  boing:  function() { tone(300, 0.35, 'sine', 0.2, 70); },
+  arpeg:  function() { [523,659,784,1047].forEach(function(f, i){ tone(f, 0.22, 'triangle', 0.14, null, i*0.12); }); },
+  sleepy: function() { tone(400, 0.4, 'sine', 0.1, 250); tone(320, 0.5, 'sine', 0.08, 200, 0.25); },
+  boss:   function() { tone(110, 0.6, 'sawtooth', 0.12, 80); tone(165, 0.5, 'sawtooth', 0.08, 120, 0.2); },
+  tap:    function() { tone(700, 0.07, 'sine', 0.12, 900); }
+};
+
+// ---------------- helpers ----------------
+function rand(a, b) { return a + Math.random() * (b - a); }
+function dist2(ax, ay, bx, by) { var dx=ax-bx, dy=ay-by; return dx*dx + dy*dy; }
+function bedPos() { return { x: W/2, y: H - 110, r: 74 }; }
+function launcherPos() { return { x: W/2, y: H - 26 }; }
+
+// ---------------- waves ----------------
+function spawnWave(w) {
+  G.critters = []; G.nets = []; G.queue = [];
+  G.bedHp = G.bedMax; G.shieldUsed = false;
+  var isBoss = (w % 5 === 0);
+  var list = [];
+  if (w === 1) {
+    for (var i = 0; i < 4; i++) list.push('Bloop');
+  } else if (isBoss) {
+    list.push('Grandpa');
+    list.push('MamaChonk');
+    var escort = Math.min(4 + Math.floor(w / 5), 8);
+    for (var j = 0; j < escort; j++) list.push(pickSpecies(w, true));
+  } else {
+    var n = Math.min(4 + Math.floor(w * 1.2), 14); // fewer critters, trickier paths
+    for (var k = 0; k < n; k++) list.push(pickSpecies(w, false));
+  }
+  // build spawn queue with staggered delays
+  var delay = 0;
+  for (var q = 0; q < list.length; q++) {
+    G.queue.push({ name: list[q], at: delay });
+    delay += rand(0.9, 1.6) * 60; // frames between spawns
+  }
+  G.waveActive = true;
+  if (isBoss) SFX.boss();
+}
+
+function pickSpecies(w, bossWave) {
+  var pool = [];
+  for (var u = 0; u < UNLOCK.length; u++) {
+    if (w >= UNLOCK[u][1]) pool.push(UNLOCK[u][0]);
+  }
+  if (bossWave) pool.push('Chonk'); // a bit beefier on boss waves
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function spawnCritter(name, x, y) {
+  var sp = SPECIES[name];
+  var paths = ['sine', 'drift'];
+  if (name === 'Zippy') paths = ['zigzag'];
+  else if (name === 'Invisibloop') paths = ['blink'];
+  else if (Math.random() < 0.35) paths.push('circle');
+  var c = {
+    sp: name, x: x !== undefined ? x : rand(W*0.15, W*0.85),
+    y: y !== undefined ? y : -40,
+    r: sp.r, hp: sp.hp, vx: 0, vy: sp.speed,
+    path: paths[Math.floor(Math.random()*paths.length)],
+    phase: rand(0, TAU), alpha: 1, stun: 0,
+    wob: rand(0, TAU), blink: rand(60, 180)
+  };
+  G.critters.push(c);
+}
+
+// ---------------- net physics ----------------
+function launchNet(vx, vy, vx2, vy2) {
+  var lp = launcherPos();
+  var base = { x: lp.x, y: lp.y, vx: vx, vy: vy, open: false, age: 0, r: G.up.big ? 38 : 26, hits: [] };
+  G.nets.push(base);
+  if (vx2 !== undefined) {
+    G.nets.push({ x: lp.x, y: lp.y, vx: vx2, vy: vy2, open: false, age: 0, r: G.up.big ? 38 : 26, hits: [] });
+  }
+  SFX.whoosh();
+}
+
+function updateNets() {
+  var gravity = 0.05 * (H / 800);
+  for (var i = G.nets.length - 1; i >= 0; i--) {
+    var n = G.nets[i];
+    n.age++;
+    if (n.age > 7) n.open = true;
+    if (n.open) n.r = Math.min(n.r + 1.5, (G.up.big ? 52 : 38));
+    n.vy += gravity;
+    n.x += n.vx; n.y += n.vy;
+    // mild drag so arcs feel floaty-spacey
+    n.vx *= 0.995; n.vy *= 0.995;
+    // rock bounce for nets too (fun ricochets)
+    for (var r = 0; r < ROCKS.length; r++) {
+      var rock = ROCKS[r];
+      var dx = n.x - rock.x, dy = n.y - rock.y;
+      var d = Math.hypot(dx, dy);
+      if (d < rock.r + n.r && d > 0) {
+        var nx = dx/d, ny = dy/d;
+        var dot = n.vx*nx + n.vy*ny;
+        n.vx = (n.vx - 2*dot*nx) * 0.85;
+        n.vy = (n.vy - 2*dot*ny) * 0.85;
+        n.x = rock.x + nx*(rock.r + n.r);
+        SFX.tink();
+      }
+    }
+    if (n.y < -60 || n.x < -60 || n.x > W+60 || n.y > H+60 || n.age > 300) {
+      G.nets.splice(i, 1); continue;
+    }
+    if (n.open) netCollide(n);
+  }
+}
+
+function netCollide(n) {
+  for (var i = 0; i < G.critters.length; i++) {
+    var c = G.critters[i];
+    if (c.dying) continue;
+    if (n.hits.indexOf(c) !== -1) continue;
+    var rr = n.r + c.r * 0.7;
+    if (dist2(n.x, n.y, c.x, c.y) > rr*rr) continue;
+    // Spiker: only catchable when the net is moving mostly sideways
+    if (c.sp === 'Spiker' && Math.abs(n.vx) < Math.abs(n.vy)) {
+      SFX.tink(); n.hits.push(c); continue;
+    }
+    // Invisibloop: only catchable while visible
+    if (c.sp === 'Invisibloop' && c.alpha < 0.4) { n.hits.push(c); continue; }
+    hitCritter(c, n);
+  }
+}
+
+function hitCritter(c, n) {
+  n.hits.push(c);
+  if (c.hp > 1) {
+    c.hp--; c.stun = Math.max(c.stun, 40);
+    burst(c.x, c.y, SPECIES[c.sp].color, 6);
+    SFX.tink();
+    return;
+  }
+  catchCritter(c);
+}
+
+function catchCritter(c) {
+  c.dying = true;
+  var sp = SPECIES[c.sp];
+  G.caught++;
+  var earned = sp.stars;
+  G.stars += earned; G.score += earned;
+  // Fuzzy drops 2 bonus stars
+  if (c.sp === 'Fuzzy') { G.stars += 2; G.score += 2; }
+  // zoo bookkeeping
+  var isNew = !G.zoo[c.sp];
+  G.zoo[c.sp] = (G.zoo[c.sp] || 0) + 1;
+  saveJSON(SAVE_ZOO, G.zoo);
+  // visuals + sounds
+  burst(c.x, c.y, sp.color, 14);
+  G.parts.push({ type:'zzz', x:c.x, y:c.y - c.r, vy:-0.6, life:70 });
+  G.parts.push({ type:'flyzoo', x:c.x, y:c.y, color:sp.color, life:80, label:isNew ? 'NEW!' : '' });
+  if (isNew) { SFX.chime(); G.newSpeciesToast = 120; G.newSpeciesName = c.sp; }
+  else SFX.pop();
+  SFX.sleepy();
+  // Mama Chonk drops 3 baby Bloops when caught
+  if (c.sp === 'MamaChonk') {
+    for (var b = 0; b < 3; b++) spawnCritter('Bloop', c.x + rand(-40,40), c.y + rand(-20,20));
+    G.toasts.push({ text:'Mama Chonk\u2019s babies!', life:90 });
+  }
+  G.critters.splice(G.critters.indexOf(c), 1);
+}
+
+// ---------------- critter update ----------------
+function updateCritters() {
+  var bp = bedPos();
+  for (var i = G.critters.length - 1; i >= 0; i--) {
+    var c = G.critters[i];
+    c.phase += 0.03; c.wob += 0.08;
+    if (c.stun > 0) { c.stun--; continue; }
+    var speed = c.vy;
+    // sneaky path modifiers
+    if (c.path === 'sine')      c.x += Math.sin(c.phase) * 2.2;
+    if (c.path === 'zigzag')    c.x += Math.sin(c.phase * 2.4) * 3.4;
+    if (c.path === 'circle')  { c.x += Math.cos(c.phase * 0.7) * 2.6; c.y += Math.sin(c.phase*0.7) * 0.6; }
+    if (c.path === 'blink') {
+      c.blink--;
+      if (c.blink < 0) { c.alpha = c.alpha > 0.5 ? 0.05 : 1; c.blink = rand(50, 140); }
+      c.alpha += (c.alpha < 0.5 ? 0.03 : -0.0);
+      if (c.alpha < 1 && c.alpha > 0.05) c.alpha += 0.02;
+      c.alpha = Math.min(1, Math.max(0.05, c.alpha));
+    }
+    // moon-rock bounce
+    for (var r = 0; r < ROCKS.length; r++) {
+      var rock = ROCKS[r];
+      var dx = c.x - rock.x, dy = (c.y - rock.y) * 2; // squash: mostly horizontal bounce
+      var d = Math.hypot(dx, dy);
+      if (d < rock.r + c.r && d > 0) {
+        c.x = rock.x + (dx/d) * (rock.r + c.r);
+        c.vx = (c.vx || 0) + (dx/d) * 1.2;
+      }
+    }
+    c.x += (c.vx || 0);
+    c.vx = (c.vx || 0) * 0.98;
+    c.y += speed;
+    // keep on screen horizontally
+    if (c.x < c.r) { c.x = c.r; c.vx = Math.abs(c.vx||0); }
+    if (c.x > W-c.r) { c.x = W-c.r; c.vx = -Math.abs(c.vx||0); }
+    // reached the bed?
+    if (dist2(c.x, c.y, bp.x, bp.y) < (bp.r*0.8 + c.r) * (bp.r*0.8 + c.r)) {
+      if (c.sp === 'Twinling') {
+        // splits into 2 Bloops instead of nibbling
+        spawnCritter('Bloop', c.x - 24, c.y - 10);
+        spawnCritter('Bloop', c.x + 24, c.y - 10);
+        burst(c.x, c.y, SPECIES.Twinling.color, 10);
+        SFX.pop();
+        G.critters.splice(i, 1);
+        continue;
+      }
+      nibble(c);
+      G.critters.splice(i, 1);
+      continue;
+    }
+    // fell out the bottom (missed the bed) — remove quietly
+    if (c.y > H + 60) G.critters.splice(i, 1);
+  }
+}
+
+function nibble(c) {
+  if (G.up.shield && !G.shieldUsed) {
+    G.shieldUsed = true;
+    G.flash = 20;
+    burst(bedPos().x, bedPos().y - 40, '#9fe8ff', 16);
+    SFX.tink();
+    G.toasts.push({ text:'Force-Field absorbed it!', life:80 });
+    return;
+  }
+  G.bedHp -= 10;
+  G.shake = 14;
+  SFX.boing();
+  if (G.bedHp <= 0) gameOver();
+}
+
+// ---------------- particles ----------------
+function burst(x, y, color, n) {
+  for (var i = 0; i < n; i++) {
+    var a = rand(0, TAU), s = rand(1, 4);
+    G.parts.push({ type:'dot', x:x, y:y, vx:Math.cos(a)*s, vy:Math.sin(a)*s,
+                   life:rand(20,40), color:color });
+  }
+}
+function updateParts() {
+  for (var i = G.parts.length - 1; i >= 0; i--) {
+    var p = G.parts[i];
+    p.life--;
+    if (p.type === 'dot') { p.x += p.vx; p.y += p.vy; p.vy += 0.06; }
+    if (p.type === 'zzz') { p.y += p.vy; }
+    if (p.type === 'flyzoo') { p.y -= 2.4; p.x += (W - 30 - p.x) * 0.04; }
+    if (p.life <= 0) G.parts.splice(i, 1);
+  }
+  for (var t = G.toasts.length - 1; t >= 0; t--) {
+    G.toasts[t].life--;
+    if (G.toasts[t].life <= 0) G.toasts.splice(t, 1);
+  }
+  if (G.newSpeciesToast > 0) G.newSpeciesToast--;
+  if (G.shake > 0) G.shake--;
+  if (G.flash > 0) G.flash--;
+}
+
+// ---------------- stun turret ----------------
+function updateTurret() {
+  if (!G.up.turret) return;
+  G.turretTimer++;
+  if (G.turretTimer < 300) return; // every 5s at 60fps
+  G.turretTimer = 0;
+  var bp = bedPos();
+  var best = null, bestD = 1e9;
+  for (var i = 0; i < G.critters.length; i++) {
+    var c = G.critters[i];
+    if (c.stun > 0) continue;
+    var d = dist2(c.x, c.y, bp.x, bp.y);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  if (best) {
+    best.stun = 150;
+    G.beam = { x1: bp.x, y1: bp.y - 70, x2: best.x, y2: best.y, life: 20 };
+    SFX.tink();
+  }
+}
+
+// ---------------- wave flow ----------------
+function updateWave() {
+  if (!G.waveActive) return;
+  if (G.queue.length) {
+    for (var i = G.queue.length - 1; i >= 0; i--) {
+      if (G.queue[i].at <= 0) { spawnCritter(G.queue[i].name); G.queue.splice(i, 1); }
+      else G.queue[i].at--;
+    }
+  } else if (G.critters.length === 0) {
+    waveClear();
+  }
+}
+
+function waveClear() {
+  G.waveActive = false;
+  SFX.arpeg();
+  if (G.wave % 10 === 0) {
+    G.screen = 'milestone';
+    G.milestoneTimer = 180; // 3 seconds
+    saveBest();
+  } else {
+    openShop();
+  }
+}
+
+function openShop() { G.screen = 'shop'; }
+
+function nextWave() {
+  G.wave++;
+  G.screen = 'play';
+  spawnWave(G.wave);
+}
+
+function gameOver() {
+  G.bedHp = 0;
+  G.screen = 'over';
+  saveBest();
+  SFX.boing();
+}
+
+function saveBest() {
+  if (G.wave > G.best.waves || (G.wave === G.best.waves && G.score > G.best.score)) {
+    G.best = { waves: G.wave, score: G.score };
+    saveJSON(SAVE_BEST, G.best);
+  }
+}
+
+function newRun() {
+  G.wave = 1; G.stars = 0; G.score = 0; G.caught = 0;
+  G.up = { big:false, double:false, turret:false, shield:false };
+  G.turretTimer = 0; G.shieldUsed = false;
+  G.bedHp = G.bedMax;
+  G.critters = []; G.nets = []; G.parts = []; G.toasts = [];
+  G.screen = 'play';
+  spawnWave(1);
+}
+
+// ---------------- input ----------------
+var buttons = []; // rebuilt by each screen render; {x,y,w,h,label,action}
+
+function hitButton(x, y) {
+  for (var i = 0; i < buttons.length; i++) {
+    var b = buttons[i];
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b;
+  }
+  return null;
+}
+
+var aiming = false;
+cv.addEventListener('pointerdown', function(e) {
+  e.preventDefault();
+  audio();
+  var x = e.clientX, y = e.clientY;
+  var b = hitButton(x, y);
+  if (b) { SFX.tap(); b.action(); return; }
+  if (G.screen !== 'play') {
+    if (G.screen === 'howto') dismissHow();
+    if (G.screen === 'sandbox') sandboxTap(x, y);
+    return;
+  }
+  // slingshot: start a pull anywhere in the bottom third
+  if (y > H * 0.66 && !aiming) {
+    aiming = true;
+    G.pull = { sx:x, sy:y, cx:x, cy:y };
+  } else if (G.screen === 'play') {
+    // tapping critters directly in the play area does nothing (nets do the work)
+  }
+}, { passive:false });
+
+cv.addEventListener('pointermove', function(e) {
+  if (aiming && G.pull) {
+    e.preventDefault();
+    G.pull.cx = e.clientX; G.pull.cy = e.clientY;
+  }
+}, { passive:false });
+
+cv.addEventListener('pointerup', function(e) {
+  if (aiming && G.pull) {
+    e.preventDefault();
+    var dx = G.pull.sx - G.pull.cx;   // pull back → fling opposite
+    var dy = G.pull.sy - G.pull.cy;
+    aiming = false;
+    var pow = 0.09;
+    var vx = dx * pow, vy = dy * pow;
+    var cap = 16;
+    var sp = Math.hypot(vx, vy);
+    if (sp < 1.2) { G.pull = null; return; } // too weak = cancel
+    if (sp > cap) { vx = vx / sp * cap; vy = vy / sp * cap; }
+    if (G.up.double) {
+      launchNet(vx, vy, vx * 0.92 + 1.5, vy * 0.92);
+    } else {
+      launchNet(vx, vy);
+    }
+    G.pull = null;
+  }
+}, { passive:false });
+
+function dismissHow() {
+  G.seenHow = true;
+  saveJSON(SAVE_HOWTO, true);
+  G.screen = 'title';
+}
+
+// ---------------- sandbox ----------------
+function buildSandbox() {
+  G.sandboxPals = [];
+  var names = Object.keys(G.zoo);
+  var colors = Object.keys(SPECIES);
+  for (var i = 0; i < names.length; i++) {
+    var count = G.zoo[names[i]];
+    var shown = Math.min(count, 6);
+    for (var k = 0; k < shown; k++) {
+      var sp = SPECIES[names[i]] || SPECIES.Bloop;
+      G.sandboxPals.push({
+        sp: names[i], color: sp.color, r: sp.r * 0.8,
+        x: rand(60, W-60), y: rand(H*0.3, H-160),
+        vx: rand(-0.8, 0.8), vy: rand(-0.4, 0.4),
+        nap: Math.random() < 0.3, react: 0, wob: rand(0, TAU)
+      });
+    }
+  }
+}
+function sandboxTap(x, y) {
+  for (var i = 0; i < G.sandboxPals.length; i++) {
+    var p = G.sandboxPals[i];
+    if (dist2(x, y, p.x, p.y) < (p.r+14)*(p.r+14)) {
+      p.react = 30; p.vy = -2.5; p.nap = false;
+      SFX.pop();
+      return;
+    }
+  }
+}
+function updateSandbox() {
+  for (var i = 0; i < G.sandboxPals.length; i++) {
+    var p = G.sandboxPals[i];
+    p.wob += 0.05;
+    if (p.react > 0) p.react--;
+    if (!p.nap) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 40 || p.x > W-40) p.vx *= -1;
+      if (p.y < H*0.25 || p.y > H-140) p.vy *= -1;
+      p.vy += 0.01;
+      if (p.react <= 0 && Math.random() < 0.005) p.nap = true;
+    } else if (Math.random() < 0.003) p.nap = false;
+  }
+}
+
+// ---------------- rendering ----------------
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function addButton(x, y, w, h, label, action, color) {
+  buttons.push({ x:x, y:y, w:w, h:h, label:label, action:action });
+  ctx.fillStyle = color || '#3d5aa9';
+  roundRect(x, y, w, h, 16); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(h*0.42) + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + w/2, y + h/2);
+}
+
+function drawBackground() {
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0b1030');
+  grad.addColorStop(0.6, '#141b3f');
+  grad.addColorStop(1, '#1d2a55');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  // twinkling stars
+  for (var i = 0; i < starField.length; i++) {
+    var s = starField[i];
+    var tw = 0.4 + 0.6 * Math.abs(Math.sin(G.t * 0.02 + s.tw));
+    ctx.globalAlpha = tw;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // soft nebula blobs
+  var nb1 = ctx.createRadialGradient(W*0.2, H*0.25, 10, W*0.2, H*0.25, W*0.4);
+  nb1.addColorStop(0, 'rgba(180,120,255,0.10)'); nb1.addColorStop(1, 'rgba(180,120,255,0)');
+  ctx.fillStyle = nb1; ctx.fillRect(0, 0, W, H);
+  var nb2 = ctx.createRadialGradient(W*0.8, H*0.35, 10, W*0.8, H*0.35, W*0.4);
+  nb2.addColorStop(0, 'rgba(120,180,255,0.10)'); nb2.addColorStop(1, 'rgba(120,180,255,0)');
+  ctx.fillStyle = nb2; ctx.fillRect(0, 0, W, H);
+}
+
+function drawMoonAndBed() {
+  var bp = bedPos();
+  // moon surface
+  ctx.fillStyle = '#cfd3e8';
+  ctx.beginPath();
+  ctx.ellipse(W/2, H + 40, W*0.9, 150, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = '#b9bed9';
+  for (var i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.arc(W*0.15 + i*W*0.17, H - 30 + (i%2)*14, 10 + (i%3)*6, 0, TAU);
+    ctx.fill();
+  }
+  // moon rocks (floating, for bounces)
+  for (var r = 0; r < ROCKS.length; r++) {
+    var rock = ROCKS[r];
+    ctx.fillStyle = '#9aa0c0';
+    ctx.beginPath(); ctx.arc(rock.x, rock.y, rock.r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#858bb0';
+    ctx.beginPath(); ctx.arc(rock.x - rock.r*0.3, rock.y - rock.r*0.2, rock.r*0.3, 0, TAU); ctx.fill();
+  }
+  // glass dome
+  ctx.strokeStyle = 'rgba(200,220,255,0.5)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(bp.x, bp.y + 10, bp.r + 16, Math.PI, TAU); ctx.stroke();
+  ctx.fillStyle = 'rgba(180,210,255,0.07)';
+  ctx.beginPath(); ctx.arc(bp.x, bp.y + 10, bp.r + 16, Math.PI, TAU); ctx.fill();
+  // pulsing glow
+  var pulse = 0.75 + 0.25 * Math.sin(G.t * 0.05);
+  var glow = ctx.createRadialGradient(bp.x, bp.y, 5, bp.x, bp.y, bp.r * 1.9 * pulse);
+  glow.addColorStop(0, 'rgba(255,220,120,' + (0.85 * pulse) + ')');
+  glow.addColorStop(0.5, 'rgba(255,200,90,' + (0.35 * pulse) + ')');
+  glow.addColorStop(1, 'rgba(255,200,90,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(bp.x - bp.r*2, bp.y - bp.r*2, bp.r*4, bp.r*3);
+  // light rays (rotating slowly)
+  ctx.save();
+  ctx.translate(bp.x, bp.y);
+  ctx.rotate(G.t * 0.004);
+  for (var ray = 0; ray < 6; ray++) {
+    ctx.rotate(TAU / 6);
+    ctx.fillStyle = 'rgba(255,225,130,' + (0.08 + 0.05 * Math.sin(G.t*0.03 + ray)) + ')';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-7, -bp.r * 2.1);
+    ctx.lineTo(7, -bp.r * 2.1);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  // the star-cradle itself (brightest object)
+  var star = ctx.createRadialGradient(bp.x, bp.y - 8, 2, bp.x, bp.y - 8, 30);
+  star.addColorStop(0, '#fffbe8');
+  star.addColorStop(0.4, '#ffe27a');
+  star.addColorStop(1, 'rgba(255,200,80,0)');
+  ctx.fillStyle = star;
+  ctx.beginPath(); ctx.arc(bp.x, bp.y - 8, 30, 0, TAU); ctx.fill();
+  // bed frame under the star
+  ctx.fillStyle = '#8a63d2';
+  roundRect(bp.x - 34, bp.y + 4, 68, 16, 6); ctx.fill();
+  ctx.fillStyle = '#6d4bb0';
+  roundRect(bp.x - 30, bp.y + 18, 60, 6, 3); ctx.fill();
+  // star-dust sparkles drifting off
+  if (Math.random() < 0.3) {
+    G.parts.push({ type:'dot', x:bp.x + rand(-40,40), y:bp.y - rand(0,30),
+                   vx:rand(-0.2,0.2), vy:rand(-0.8,-0.3), life:rand(30,60), color:'#ffe27a' });
+  }
+  // force-field bubble
+  if (G.up.shield && !G.shieldUsed) {
+    ctx.strokeStyle = 'rgba(140,220,255,0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(bp.x, bp.y - 6, bp.r + 24, 0, TAU); ctx.stroke();
+  }
+  // health pips
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('★ ' + Math.max(0, G.bedHp), bp.x, bp.y + 44);
+}
+
+function drawCritter(c) {
+  var sp = SPECIES[c.sp];
+  ctx.save();
+  ctx.globalAlpha = c.sp === 'Invisibloop' ? Math.max(0.08, c.alpha) : 1;
+  var bob = Math.sin(c.wob) * 3;
+  // body
+  ctx.fillStyle = sp.color;
+  ctx.beginPath(); ctx.arc(c.x, c.y + bob, c.r, 0, TAU); ctx.fill();
+  // species-specific flourishes
+  if (c.sp === 'Spiker') {
+    ctx.strokeStyle = sp.color; ctx.lineWidth = 3;
+    for (var s = 0; s < 7; s++) {
+      var a = s / 7 * TAU;
+      ctx.beginPath();
+      ctx.moveTo(c.x + Math.cos(a)*c.r, c.y + bob + Math.sin(a)*c.r);
+      ctx.lineTo(c.x + Math.cos(a)*(c.r+8), c.y + bob + Math.sin(a)*(c.r+8));
+      ctx.stroke();
+    }
+  }
+  if (c.sp === 'Fuzzy') {
+    ctx.strokeStyle = sp.color; ctx.lineWidth = 2;
+    for (var f = 0; f < 10; f++) {
+      var fa = f / 10 * TAU;
+      ctx.beginPath();
+      ctx.moveTo(c.x + Math.cos(fa)*c.r, c.y + bob + Math.sin(fa)*c.r);
+      ctx.lineTo(c.x + Math.cos(fa)*(c.r+6), c.y + bob + Math.sin(fa)*(c.r+6));
+      ctx.stroke();
+    }
+  }
+  if (c.sp === 'Grandpa') {
+    // nebula swirl crown
+    ctx.strokeStyle = 'rgba(230,180,255,0.7)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(c.x, c.y + bob, c.r + 10, c.phase, c.phase + 4); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('GRANDPA NEBULA', c.x, c.y - c.r - 16);
+    ctx.fillText('♥'.repeat(Math.max(0, c.hp)), c.x, c.y - c.r - 32);
+  }
+  if (c.sp === 'MamaChonk') {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('MAMA', c.x, c.y - c.r - 10);
+  }
+  if (c.sp === 'Drowsy' || c.stun > 0) {
+    ctx.fillStyle = '#fff'; ctx.font = '14px serif';
+    ctx.fillText('💤', c.x + c.r*0.7, c.y - c.r);
+  }
+  // face
+  var asleep = (c.sp === 'Drowsy');
+  ctx.fillStyle = '#26304f';
+  if (asleep || c.stun > 0) {
+    ctx.lineWidth = 2.5; ctx.strokeStyle = '#26304f';
+    ctx.beginPath(); ctx.arc(c.x - 7, c.y + bob - 3, 4, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(c.x + 7, c.y + bob - 3, 4, 0, Math.PI); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(c.x - 7, c.y + bob - 3, 3.2, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(c.x + 7, c.y + bob - 3, 3.2, 0, TAU); ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(c.x, c.y + bob + 6, 5, 0, Math.PI); ctx.stroke();
+  ctx.restore();
+}
+
+function drawNet(n) {
+  ctx.save();
+  var glow = n.open ? 'rgba(140,255,190,' : 'rgba(140,220,255,';
+  ctx.strokeStyle = glow + '0.9)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, TAU); ctx.stroke();
+  if (n.open) {
+    // web lines inside the open net
+    ctx.strokeStyle = glow + '0.5)';
+    ctx.lineWidth = 1.5;
+    for (var i = 1; i <= 3; i++) {
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r * i / 4, 0, TAU); ctx.stroke();
+    }
+    for (var a = 0; a < 6; a++) {
+      var ang = a / 6 * TAU;
+      ctx.beginPath();
+      ctx.moveTo(n.x, n.y);
+      ctx.lineTo(n.x + Math.cos(ang)*n.r, n.y + Math.sin(ang)*n.r);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawTrajectory() {
+  if (!G.pull) return;
+  var lp = launcherPos();
+  var dx = G.pull.sx - G.pull.cx, dy = G.pull.sy - G.pull.cy;
+  var vx = dx * 0.09, vy = dy * 0.09;
+  var cap = 16, sp = Math.hypot(vx, vy);
+  if (sp > cap) { vx = vx/sp*cap; vy = vy/sp*cap; }
+  var grav = 0.05 * (H / 800);
+  var px = lp.x, py = lp.y, pvx = vx, pvy = vy;
+  ctx.fillStyle = 'rgba(255,230,140,0.8)';
+  for (var i = 0; i < 22; i++) {
+    pvy += grav; px += pvx; py += pvy;
+    if (i % 2 === 0) {
+      ctx.globalAlpha = 0.9 - i * 0.04;
+      ctx.beginPath(); ctx.arc(px, py, 3.2, 0, TAU); ctx.fill();
+    }
+    if (py > H || px < 0 || px > W) break;
+  }
+  ctx.globalAlpha = 1;
+  // slingshot band
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(lp.x, lp.y); ctx.lineTo(G.pull.cx, G.pull.cy); ctx.stroke();
+  // pull-back pouch dot
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath(); ctx.arc(G.pull.cx, G.pull.cy, 9, 0, TAU); ctx.fill();
+}
+
+function drawHUD() {
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('⭐ ' + G.stars, 12, 10);
+  ctx.textAlign = 'center';
+  ctx.fillText('Wave ' + G.wave, W/2, 10);
+  ctx.textAlign = 'right';
+  ctx.fillText('🦑 ' + G.caught, W - 12, 10);
+  // mute button
+  addButton(W - 46, 40, 38, 34, G.muted ? '🔇' : '🔊', function() {
+    G.muted = !G.muted; saveJSON(SAVE_MUTE, G.muted);
+  }, '#26375f');
+  // bed health bar
+  var bp = bedPos();
+  var bw = Math.min(220, W * 0.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  roundRect(W/2 - bw/2, 40, bw, 12, 6); ctx.fill();
+  ctx.fillStyle = G.bedHp > 30 ? '#7ddc8a' : '#ff8080';
+  roundRect(W/2 - bw/2, 40, bw * Math.max(0, G.bedHp / G.bedMax), 12, 6); ctx.fill();
+}
+
+function drawParts() {
+  for (var i = 0; i < G.parts.length; i++) {
+    var p = G.parts[i];
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, p.life / 20);
+    if (p.type === 'dot') {
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, TAU); ctx.fill();
+    } else if (p.type === 'zzz') {
+      ctx.fillStyle = '#dfe8ff'; ctx.font = '18px serif';
+      ctx.fillText('💤', p.x, p.y);
+    } else if (p.type === 'flyzoo') {
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, TAU); ctx.fill();
+      if (p.label) {
+        ctx.fillStyle = '#ffd166'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(p.label, p.x, p.y - 12);
+      }
+    }
+    ctx.restore();
+  }
+  // toasts
+  ctx.textAlign = 'center';
+  for (var t = 0; t < G.toasts.length; t++) {
+    var to = G.toasts[t];
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, to.life / 20);
+    ctx.fillStyle = '#ffd166'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(to.text, W/2, H * 0.3);
+    ctx.restore();
+  }
+  if (G.newSpeciesToast > 0) {
+    ctx.fillStyle = '#8ef0e2'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('NEW FRIEND: ' + G.newSpeciesName + '!', W/2, H * 0.24);
+  }
+  // stun beam
+  if (G.beam && G.beam.life > 0) {
+    G.beam.life--;
+    ctx.strokeStyle = 'rgba(160,230,255,' + (G.beam.life / 20) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(G.beam.x1, G.beam.y1); ctx.lineTo(G.beam.x2, G.beam.y2); ctx.stroke();
+  }
+}
+
+function drawTitle() {
+  drawBackground();
+  // bouncing Bloop mascot
+  var bounce = Math.abs(Math.sin(G.t * 0.05)) * 26;
+  var mx = W/2 - 130, my = H*0.24 - bounce;
+  ctx.fillStyle = SPECIES.Bloop.color;
+  ctx.beginPath(); ctx.arc(mx, my, 30, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#26304f';
+  ctx.beginPath(); ctx.arc(mx - 9, my - 4, 4.5, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx + 9, my - 4, 4.5, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx, my + 8, 7, 0, Math.PI); ctx.fill();
+  // title
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold ' + Math.floor(W*0.095) + 'px sans-serif';
+  ctx.fillText('⭐ STAR NETS ⭐', W/2, H*0.16);
+  ctx.fillStyle = '#dfe8ff';
+  ctx.font = 'bold ' + Math.floor(W*0.045) + 'px sans-serif';
+  ctx.fillText('Made for Captain Liam', W/2, H*0.24 + 40);
+  var zooCount = 0; for (var k in G.zoo) zooCount += G.zoo[k];
+  addButton(W/2 - 90, H*0.45, 180, 64, '▶ PLAY', function() {
+    if (!G.seenHow) { G.screen = 'howto'; G.howTimer = 900; }
+    else newRun();
+  }, '#3fa96b');
+  addButton(W/2 - 90, H*0.45 + 84, 180, 52, '🐾 Sandbox (' + zooCount + ')', function() {
+    buildSandbox(); G.screen = 'sandbox';
+  }, '#c94f7c');
+  addButton(W - 46, 12, 38, 34, G.muted ? '🔇' : '🔊', function() {
+    G.muted = !G.muted; saveJSON(SAVE_MUTE, G.muted);
+  }, '#26375f');
+  ctx.fillStyle = '#9aa6d0'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Best: wave ' + G.best.waves + ' · ' + G.best.score + ' pts', W/2, H - 40);
+}
+
+function drawHowto() {
+  drawBackground();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('How to play, Captain!', W/2, H*0.16);
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '20px sans-serif';
+  var lines = [
+    '1. The lost babies float toward the Star Bed,',
+    '   thinking it is their mama. Babies chew!',
+    '2. Touch the bottom of the screen and PULL BACK',
+    '   like a slingshot. See the dotted arc?',
+    '3. RELEASE to fling your net. Catch them gently —',
+    '   they go sleepy 💤 and join your Space Zoo!',
+    '4. Protect the Star Bed. Every 10 waves,',
+    '   the whole family naps together. 🌙',
+    '',
+    'Tap anywhere to start!'
+  ];
+  for (var i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], W/2, H*0.24 + i*30);
+  }
+  var secs = Math.ceil(G.howTimer / 60);
+  ctx.fillStyle = '#9aa6d0'; ctx.font = '16px sans-serif';
+  ctx.fillText('(auto-starts in ' + secs + 's)', W/2, H - 60);
+}
+
+function updateHow() {
+  G.howTimer--;
+  if (G.howTimer <= 0) dismissHow();
+}
+
+function drawShop() {
+  drawBackground();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('Wave ' + G.wave + ' clear! ⭐ ' + G.stars, W/2, H*0.1);
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '16px sans-serif';
+  ctx.fillText('Spend stars on upgrades:', W/2, H*0.16);
+  buttons.length = 0;
+  var bh = 62, gap = 14, y0 = H*0.22;
+  for (var i = 0; i < UPGRADES.length; i++) {
+    var u = UPGRADES[i];
+    var owned = G.up[u.key];
+    var y = y0 + i * (bh + gap);
+    ctx.fillStyle = owned ? 'rgba(63,166,106,0.25)' : 'rgba(255,255,255,0.08)';
+    roundRect(W*0.08, y, W*0.84, bh, 14); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = 'bold 19px sans-serif';
+    ctx.fillText(u.name, W*0.12, y + 24);
+    ctx.fillStyle = '#9aa6d0'; ctx.font = '14px sans-serif';
+    ctx.fillText(u.blurb, W*0.12, y + 45);
+    ctx.textAlign = 'right';
+    if (owned) {
+      ctx.fillStyle = '#7ddc8a'; ctx.font = 'bold 17px sans-serif';
+      ctx.fillText('OWNED ✓', W*0.88, y + bh/2 - 8);
+    } else {
+      var can = G.stars >= u.cost;
+      ctx.fillStyle = can ? '#ffd166' : '#777f9d'; ctx.font = 'bold 17px sans-serif';
+      ctx.fillText(u.cost + ' ⭐', W*0.88, y + bh/2 - 8);
+      if (can) {
+        (function(u) {
+          addButton(W*0.62, y + 12, 90, 38, 'BUY', function() {
+            if (G.stars >= u.cost && !G.up[u.key]) {
+              G.stars -= u.cost; G.up[u.key] = true;
+              SFX.chime();
+            }
+          }, '#3fa96b');
+        })(u);
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+  addButton(W*0.2, H*0.88, W*0.6, 58, 'NEXT WAVE ▶', nextWave, '#3d5aa9');
+}
+
+function drawMilestone() {
+  drawBackground();
+  drawMoonAndBed();
+  // caught friends pile onto the bed for a family nap
+  var bp = bedPos();
+  var names = Object.keys(G.zoo);
+  var idx = 0;
+  for (var i = 0; i < names.length; i++) {
+    var count = Math.min(G.zoo[names[i]], 4);
+    for (var k = 0; k < count; k++) {
+      var ang = idx * 0.9;
+      var px = bp.x + Math.cos(ang) * 40 * (idx % 3 + 1) * 0.5;
+      var py = bp.y - 20 - (idx % 4) * 12;
+      var sp = SPECIES[names[i]];
+      ctx.fillStyle = sp.color;
+      ctx.beginPath(); ctx.arc(px, py, sp.r * 0.55, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#26304f'; ctx.font = '12px serif'; ctx.textAlign = 'center';
+      ctx.fillText('💤', px + 8, py - 8);
+      idx++;
+    }
+  }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,230,150,' + (0.7 + 0.3*Math.sin(G.t*0.2)) + ')';
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('🌙 BEDTIME MILESTONE 🌙', W/2, H*0.14);
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '20px sans-serif';
+  ctx.fillText('Wave ' + G.wave + ': the lost babies found their mama.', W/2, H*0.2);
+  ctx.fillText('Every one of them is safe. Then... back to work, Captain!', W/2, H*0.24);
+  if (G.milestoneTimer <= 0) openShop();
+}
+
+function drawSandbox() {
+  drawBackground();
+  // habitat floor
+  ctx.fillStyle = '#cfd3e8';
+  ctx.beginPath(); ctx.ellipse(W/2, H + 60, W*0.9, 140, 0, 0, TAU); ctx.fill();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd166'; ctx.font = 'bold 26px sans-serif';
+  ctx.fillText('🐾 Pet Sandbox', W/2, 40);
+  var zooCount = 0; for (var k in G.zoo) zooCount += G.zoo[k];
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '16px sans-serif';
+  ctx.fillText(zooCount + ' friends · ⭐ ' + G.stars + ' coins this run', W/2, 70);
+  // Bloop greeting
+  var gx = 70, gy = H*0.22;
+  ctx.fillStyle = SPECIES.Bloop.color;
+  ctx.beginPath(); ctx.arc(gx, gy, 22, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#26304f';
+  ctx.beginPath(); ctx.arc(gx - 7, gy - 3, 3.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(gx + 7, gy - 3, 3.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(gx, gy + 6, 5, 0, Math.PI); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif';
+  roundRect(gx + 28, gy - 20, 74, 26, 8); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+  ctx.fillStyle = '#26304f'; ctx.fillText('Bloop! 👋', gx + 65, gy - 2);
+  // residents
+  for (var i = 0; i < G.sandboxPals.length; i++) {
+    var p = G.sandboxPals[i];
+    var bob = Math.sin(p.wob) * 3;
+    var rr = p.r * (p.react > 0 ? 1.15 : 1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y + bob, rr, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#26304f';
+    if (p.nap) {
+      ctx.strokeStyle = '#26304f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x - 5, p.y + bob - 2, 3, 0, Math.PI); ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.x + 5, p.y + bob - 2, 3, 0, Math.PI); ctx.stroke();
+      ctx.font = '12px serif'; ctx.fillStyle = '#dfe8ff';
+      ctx.fillText('💤', p.x + rr*0.8, p.y + bob - rr);
+    } else {
+      ctx.beginPath(); ctx.arc(p.x - 5, p.y + bob - 2, 2.8, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x + 5, p.y + bob - 2, 2.8, 0, TAU); ctx.fill();
+      if (p.react > 0) { ctx.font = '16px serif'; ctx.fillText('🎵', p.x + rr, p.y + bob - rr); }
+    }
+    // species tag
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p.sp, p.x, p.y + bob + rr + 12);
+  }
+  // collection list
+  ctx.textAlign = 'left'; ctx.font = '12px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  var cy = H * 0.62, col = 0, row = 0;
+  for (var name in G.zoo) {
+    ctx.fillText(name + ' ×' + G.zoo[name], 20 + col * 110, cy + row * 18);
+    col++; if (col > 3) { col = 0; row++; }
+  }
+  addButton(12, 12, 74, 38, '◀ Back', function() { G.screen = 'title'; }, '#26375f');
+}
+
+function drawOver() {
+  drawBackground();
+  drawMoonAndBed();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff9e9e'; ctx.font = 'bold 34px sans-serif';
+  ctx.fillText('The Bed needs a nap...', W/2, H*0.18);
+  ctx.fillStyle = '#dfe8ff'; ctx.font = '20px sans-serif';
+  var zooCount = 0; for (var k in G.zoo) zooCount += G.zoo[k];
+  var lines = [
+    'Waves survived: ' + (G.wave - (G.waveActive ? 1 : 0)),
+    'Critters caught: ' + G.caught,
+    'Sandbox residents: ' + zooCount,
+    'Score: ' + G.score,
+    'Personal best: wave ' + G.best.waves + ' · ' + G.best.score + ' pts'
+  ];
+  for (var i = 0; i < lines.length; i++) ctx.fillText(lines[i], W/2, H*0.3 + i*32);
+  if (G.wave >= G.best.waves && G.score >= G.best.score && G.score > 0) {
+    ctx.fillStyle = '#ffd166'; ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('🏆 NEW PERSONAL BEST!', W/2, H*0.62);
+  }
+  addButton(W/2 - 100, H*0.72, 200, 62, 'PLAY AGAIN', newRun, '#3fa96b');
+  addButton(W/2 - 100, H*0.72 + 80, 200, 48, '🐾 Sandbox', function() {
+    buildSandbox(); G.screen = 'sandbox';
+  }, '#c94f7c');
+}
+
+// ---------------- main loop ----------------
+function frame() {
+  G.t++;
+  buttons = [];
+  ctx.clearRect(0, 0, W, H);
+
+  if (G.screen === 'title') {
+    drawTitle();
+  } else if (G.screen === 'howto') {
+    updateHow();
+    drawHowto();
+  } else if (G.screen === 'play') {
+    ctx.save();
+    if (G.shake > 0) ctx.translate(rand(-4,4) * (G.shake/14), rand(-4,4) * (G.shake/14));
+    drawBackground();
+    updateWave();
+    updateCritters();
+    updateNets();
+    updateTurret();
+    updateParts();
+    drawMoonAndBed();
+    for (var c = 0; c < G.critters.length; c++) drawCritter(G.critters[c]);
+    for (var n = 0; n < G.nets.length; n++) drawNet(G.nets[n]);
+    drawTrajectory();
+    drawParts();
+    drawHUD();
+    ctx.restore();
+  } else if (G.screen === 'shop') {
+    updateParts();
+    drawShop();
+    drawParts();
+  } else if (G.screen === 'milestone') {
+    G.milestoneTimer--;
+    updateParts();
+    drawMilestone();
+    drawParts();
+  } else if (G.screen === 'sandbox') {
+    updateSandbox();
+    drawSandbox();
+  } else if (G.screen === 'over') {
+    updateParts();
+    drawOver();
+    drawParts();
+  }
+
+  // global flash (force-field)
+  if (G.flash > 0) {
+    ctx.fillStyle = 'rgba(160,230,255,' + (G.flash / 40) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
