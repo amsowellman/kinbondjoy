@@ -71,6 +71,42 @@
   }
   .pillar h2 { font-size: 1.35rem; margin-bottom: 8px; }
   .pillar p { font-size: 0.98rem; }
+  .nav-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 44px;
+  }
+  .nav-buttons a {
+    display: inline-block;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.15rem;
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--ink);
+    background: #fff;
+    border: 2px solid var(--ember);
+    border-radius: 14px;
+    padding: 14px 30px;
+    box-shadow: 0 4px 14px rgba(43,43,64,0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .nav-buttons a:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(43,43,64,0.14);
+  }
+  .nav-buttons a.games { border-color: var(--leaf); }
+  .nav-buttons a.games .dot { color: var(--leaf); }
+  .nav-buttons a.media { border-color: var(--ember); }
+  .nav-buttons a.media .dot { color: var(--ember); }
+  .nav-buttons a.knowledge { border-color: var(--gold); }
+  .nav-buttons a.knowledge .dot { color: var(--gold); }
+  .nav-buttons .dot {
+    font-size: 0.7rem;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
   .pillar.kin h2 { color: var(--leaf); }
   .pillar.bond h2 { color: var(--ember); }
   .pillar.joy h2 { color: var(--gold); }
@@ -115,6 +151,12 @@
 <main>
   <p class="intro">Family is our operating system for the people we love — a shared place where our people,
   our projects, and our promises live, grown layer by layer like a pearl.</p>
+
+  <nav class="nav-buttons" aria-label="Main sections">
+    <a class="games" href="/chess.html"><span class="dot">◆</span>Games</a>
+    <a class="media" href="/media.html"><span class="dot">◆</span>Media</a>
+    <a class="knowledge" href="/knowledge.html"><span class="dot">◆</span>Knowledge Base</a>
+  </nav>
 
   <div class="pillars">
     <div class="pillar kin">
