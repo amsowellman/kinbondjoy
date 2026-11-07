@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Media — Family</title>
-<meta name="description" content="Media — a family space for photos, videos, and memories. Coming soon.">
+<meta name="description" content="Media — a family space for photos, videos, and memories.">
 <style>
   :root {
     --ink: #2b2b40;
@@ -21,14 +21,41 @@
   header { text-align: center; padding: 60px 20px 30px; }
   h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); color: var(--ember); }
   main { max-width: 820px; margin: 0 auto; padding: 20px 24px 60px; text-align: center; }
-  .soon {
+  .intro {
     font-style: italic;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     opacity: 0.85;
+    margin-bottom: 28px;
+  }
+  .video-card {
     background: #fff;
     border-radius: 14px;
-    padding: 26px 22px;
+    padding: 22px 22px 26px;
     box-shadow: 0 4px 14px rgba(43,43,64,0.08);
+    margin-bottom: 30px;
+  }
+  .video-card h2 { font-size: 1.4rem; color: var(--ink); margin-bottom: 6px; }
+  .video-card p.desc { font-size: 1rem; opacity: 0.85; margin-bottom: 16px; }
+  .video-card video {
+    width: 100%;
+    border-radius: 10px;
+    background: #000;
+    display: block;
+  }
+  .video-card a.source {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: var(--ember);
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .video-card a.source:hover { text-decoration: underline; }
+  .made-note {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    font-style: italic;
+    margin-top: 8px;
   }
   .back {
     display: inline-block;
@@ -46,7 +73,31 @@
   <h1>Media</h1>
 </header>
 <main>
-  <p class="soon">Coming soon — a home for family photos, videos, and memories.</p>
+  <p class="intro">A home for family stories, videos, and memories.</p>
+
+  <section class="video-card">
+    <h2>🐉 Dragon and the Guinea Pig Café</h2>
+    <p class="desc">A little dragon follows a trail of glowing cupcakes through the snowy forest —
+    and discovers the coziest café in the mountains, run by guinea pigs in tiny aprons.</p>
+    <video controls preload="metadata" poster="media/dragon-poster.jpg">
+      <source src="media/dragon-and-the-guinea-pig-cafe.mp4" type="video/mp4">
+      Your browser does not support embedded video.
+    </video>
+    <a class="source" href="https://drive.google.com/file/d/1D57WKydcQn3Z2XexwSVJWHwlASgt25Ty/view">Full-quality version on Drive →</a>
+    <p class="made-note">15 seconds · made at home with the house computer's imagination</p>
+  </section>
+
+  <section class="video-card">
+    <h2>🐹 Guinea Pig Café: The Toasting Dragon</h2>
+    <p class="desc">Three bakers. One dragon. Perfectly toasted cupcakes — and a tiny high-five finish.</p>
+    <video controls preload="metadata" poster="media/gpig-poster.jpg">
+      <source src="media/guinea-pig-cafe-dragon-clip.mp4" type="video/mp4">
+      Your browser does not support embedded video.
+    </video>
+    <a class="source" href="https://drive.google.com/file/d/1qZi6HSb7kluDI1E2Ow4NjRT3dBjBEBbJ/view">Full-quality version on Drive →</a>
+    <p class="made-note">6 seconds · made at home with the house computer's imagination</p>
+  </section>
+
   <a class="back" href="/">← Back home</a>
 </main>
 <footer>
