@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stories — Listen Together</title>
-<meta name="description" content="Stories — bedtime stories, spooky tales, and songs made at home. Press play and listen together.">
+<meta name="description" content="Stories — bedtime stories, spooky tales, and songs made at home. Listen together, read together.">
 <style>
   :root {
     --ink: #2b2b40;
@@ -28,39 +28,38 @@
     opacity: 0.85;
     margin-bottom: 28px;
   }
-  .story-card {
+  .series-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 26px 24px;
+    box-shadow: 0 4px 14px rgba(43,43,64,0.08);
+    margin-bottom: 30px;
+    display: block;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .series-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(43,43,64,0.14); }
+  .series-card h2 { font-size: 1.5rem; margin-bottom: 6px; }
+  .series-card:hover h2 { text-decoration: underline; }
+  .series-card p { font-size: 1rem; opacity: 0.85; }
+  .series-card .count { font-size: 0.9rem; opacity: 0.6; font-style: italic; margin-top: 10px; }
+  .single-card {
     background: #fff;
     border-radius: 14px;
     padding: 22px 22px 26px;
     box-shadow: 0 4px 14px rgba(43,43,64,0.08);
     margin-bottom: 30px;
-    display: flex;
-    gap: 20px;
-    align-items: center;
     text-align: left;
   }
-  .story-card img.cover {
-    width: 130px;
-    height: 130px;
-    border-radius: 10px;
-    object-fit: cover;
-    flex-shrink: 0;
-    background: #eee;
-  }
-  .story-card .story-body { flex: 1; min-width: 0; }
-  .story-card h2 { font-size: 1.3rem; color: var(--ink); margin-bottom: 6px; }
-  .story-card p.desc { font-size: 0.98rem; opacity: 0.85; margin-bottom: 14px; }
-  .story-card audio {
-    width: 100%;
-  }
+  .single-card h2 { font-size: 1.3rem; color: var(--ink); margin-bottom: 6px; }
+  .single-card p.desc { font-size: 0.98rem; opacity: 0.85; margin-bottom: 14px; }
+  .single-card audio { width: 100%; }
   .made-note {
     font-size: 0.85rem;
     opacity: 0.6;
     font-style: italic;
     margin-top: 8px;
-  }
-  @media (max-width: 560px) {
-    .story-card { flex-direction: column; text-align: center; }
   }
   .back {
     display: inline-block;
@@ -78,60 +77,42 @@
   <h1>Stories</h1>
 </header>
 <main>
-  <p class="intro">Bedtime tales, spooky stories, and songs — made at home. Press play and listen together.</p>
+  <p class="intro">Series and songs, made at home. Pick a story and dive in.</p>
 
-  <section class="story-card">
-    <img class="cover" src="audio/poopy-ep1-cover.jpg" alt="Poopy and Friends — Episode 1 cover art">
-    <div class="story-body">
-      <h2>💩 Poopy and Friends — Ep. 1: The Fun-Freezer 3000</h2>
-      <p class="desc">Dr. Robotnik freezes ALL the fun in town. Sonic bonks, Donkey Kong barrels, and one
-      heroic heap of brown saves the day with the Silly Dance of the Seven Stinkwaves — featuring two
-      brand-new songs, "The Poopy Theme" and "Giggle Storm."</p>
-      <audio controls preload="metadata">
-        <source src="audio/poopy-and-friends-ep1-fun-freezer-3000.mp3" type="audio/mpeg">
-        Your browser does not support embedded audio.
-      </audio>
-      <p class="made-note">7 minutes · full voice cast · two songs · silliest episode yet</p>
-    </div>
+  <a class="series-card" href="/stories/lantern-fox.html">
+    <h2>🦊 The Lantern Fox</h2>
+    <p>A glowing-tailed fox who guides Max &amp; Riley through cozy adventures —
+    from the deep dark woods to dreamland, a midnight dojo, and the city zoo.</p>
+    <p class="count">9 episodes · read-along storybooks + a spooky storytime</p>
+  </a>
+
+  <a class="series-card" href="/stories/poopy.html">
+    <h2>💩 Poopy and Friends</h2>
+    <p>The comic-relief hero with a heart of gold and a smell of doom — teaming up
+    with Sonic, Donkey Kong, and the world's angriest scientist. With songs!</p>
+    <p class="count">Episode 1 · full voice cast · two songs</p>
+  </a>
+
+  <section class="single-card">
+    <h2>🎵 The Lantern Fox Song</h2>
+    <p class="desc">The theme song from the Lantern Fox series — a little lantern, a little fox,
+    a little glow in the dark.</p>
+    <audio controls preload="none">
+      <source src="/audio/lantern-fox-song.mp3" type="audio/mpeg">
+      Your browser does not support embedded audio.
+    </audio>
+    <p class="made-note">1½ minutes · the fox's own song</p>
   </section>
 
-  <section class="story-card">
-    <div class="story-body">
-      <h2>🦊 The Lantern Fox — Ep. 8: The Witch's Candy Cottage</h2>
-      <p class="desc">A spooky storytime from the Lantern Fox series. A lantern-lit fox wanders a little
-      too close to a cottage made of candy…</p>
-      <audio controls preload="metadata">
-        <source src="audio/lantern-fox-8-spooky-narration.mp3" type="audio/mpeg">
-        Your browser does not support embedded audio.
-      </audio>
-      <p class="made-note">2½ minutes · spooky-but-cozy storytime</p>
-    </div>
-  </section>
-
-  <section class="story-card">
-    <div class="story-body">
-      <h2>🎵 The Lantern Fox Song</h2>
-      <p class="desc">The theme song from the Lantern Fox series — a little lantern, a little fox,
-      a little glow in the dark.</p>
-      <audio controls preload="metadata">
-        <source src="audio/lantern-fox-song.mp3" type="audio/mpeg">
-        Your browser does not support embedded audio.
-      </audio>
-      <p class="made-note">1½ minutes · the fox's own song</p>
-    </div>
-  </section>
-
-  <section class="story-card">
-    <div class="story-body">
-      <h2>🌋 Lava Lake Song</h2>
-      <p class="desc">A spooky, bubbling song about a lake of lava. Best listened to with the lights
-      slightly dimmed.</p>
-      <audio controls preload="metadata">
-        <source src="audio/lava-lake-song-spooky.mp3" type="audio/mpeg">
-        Your browser does not support embedded audio.
-      </audio>
-      <p class="made-note">2 minutes · spooky season approved</p>
-    </div>
+  <section class="single-card">
+    <h2>🌋 Lava Lake Song</h2>
+    <p class="desc">A spooky, bubbling song about a lake of lava. Best listened to with the lights
+    slightly dimmed.</p>
+    <audio controls preload="none">
+      <source src="/audio/lava-lake-song-spooky.mp3" type="audio/mpeg">
+      Your browser does not support embedded audio.
+    </audio>
+    <p class="made-note">2 minutes · spooky season approved</p>
   </section>
 
   <a class="back" href="/">← Back home</a>

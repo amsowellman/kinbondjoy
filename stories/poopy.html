@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poopy and Friends — Episodes</title>
+<meta name="description" content="Poopy and Friends — the comic-relief hero with a heart of gold and a smell of doom, teaming up with Sonic, Donkey Kong, and Dr. Robotnik.">
+<style>
+  :root {
+    --ink: #2b2b40;
+    --paper: #fffaf3;
+    --ember: #e0623d;
+    --sky: #7fb4d9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    background: linear-gradient(180deg, var(--paper) 0%, #fdf3e0 100%);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header { text-align: center; padding: 60px 20px 30px; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); color: var(--ember); }
+  main { max-width: 720px; margin: 0 auto; padding: 20px 24px 60px; }
+  .intro {
+    text-align: center;
+    font-style: italic;
+    font-size: 1.05rem;
+    opacity: 0.85;
+    margin-bottom: 28px;
+  }
+  .ep-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px 22px 26px;
+    box-shadow: 0 4px 14px rgba(43,43,64,0.08);
+    margin-bottom: 22px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .ep-card img.cover {
+    width: 140px;
+    height: 140px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .ep-card .ep-body { flex: 1; min-width: 0; }
+  .ep-card h2 { font-size: 1.25rem; color: var(--ink); margin-bottom: 4px; }
+  .ep-card p.desc { font-size: 0.95rem; opacity: 0.85; margin-bottom: 12px; }
+  .ep-card audio { width: 100%; }
+  .made-note { font-size: 0.82rem; opacity: 0.6; font-style: italic; margin-top: 8px; }
+  @media (max-width: 560px) {
+    .ep-card { flex-direction: column; text-align: center; }
+  }
+  .back {
+    display: inline-block;
+    margin-top: 30px;
+    color: var(--ember);
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .back:hover { text-decoration: underline; }
+  footer { text-align: center; padding: 30px 16px; font-size: 0.9rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Poopy and Friends</h1>
+</header>
+<main>
+  <p class="intro">The comic-relief hero with a heart of gold and a smell of pure chaos.</p>
+
+  <section class="ep-card">
+    <img class="cover" src="/audio/poopy-ep1-cover.jpg" alt="Poopy and Friends — Episode 1 cover art">
+    <div class="ep-body">
+      <h2>Ep. 1 — The Fun-Freezer 3000</h2>
+      <p class="desc">Dr. Robotnik freezes ALL the fun in town. Sonic bonks, Donkey Kong barrels,
+      and one heroic heap of brown saves the day with the Silly Dance of the Seven Stinkwaves —
+      featuring two brand-new songs, "The Poopy Theme" and "Giggle Storm."</p>
+      <audio controls preload="metadata">
+        <source src="/audio/poopy-and-friends-ep1-fun-freezer-3000.mp3" type="audio/mpeg">
+        Your browser does not support embedded audio.
+      </audio>
+      <p class="made-note">7 minutes · full voice cast · two songs · silliest episode yet</p>
+    </div>
+  </section>
+
+  <a class="back" href="/stories.html">← Back to Stories</a>
+</main>
+<footer>
+  Family · built at home, meant for everywhere · est. 2026
+</footer>
+</body>
+</html>
