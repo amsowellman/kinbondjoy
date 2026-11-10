@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Poopy and Friends</title>
+    <link>https://kinbondjoy.pw/stories/poopy.html</link>
+    <atom:link href="https://kinbondjoy.pw/poopy.xml" rel="self" type="application/rss+xml"/>
+    <description>The comic-relief hero with a heart of gold and a smell of pure chaos. Family-made audio episodes: full voice cast, songs, and silliness. New episodes appear automatically.</description>
+    <language>en-us</language>
+    <itunes:author>KinBondJoy Family Studio</itunes:author>
+    <itunes:image href="https://kinbondjoy.pw/audio/poopy-ep1-cover.jpg"/>
+    <itunes:category text="Kids &amp; Family"/>
+    <itunes:explicit>false</itunes:explicit>
+    <image>
+      <url>https://kinbondjoy.pw/audio/poopy-ep1-cover.jpg</url>
+      <title>Poopy and Friends</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+    </image>
+
+    <item>
+      <title>Ep. 1 — The Fun-Freezer 3000</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>Dr. Robotnik freezes ALL the fun in town. Sonic bonks, Donkey Kong barrels, and one heroic heap of brown saves the day with the Silly Dance of the Seven Stinkwaves — featuring two brand-new songs, "The Poopy Theme" and "Giggle Storm."</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep1-fun-freezer-3000.mp3" type="audio/mpeg" length="6322094"/>
+      <guid isPermaLink="false">poopy-ep-001</guid>
+      <pubDate>Sat, 07 Nov 2026 08:00:00 -0800</pubDate>
+      <itunes:duration>420</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+    <item>
+      <title>Ep. 2 — The Perpetual Monday Machine</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>A machine that makes every day Monday. Forever. Poopy and the gang fight back with the one weapon Mondays cannot survive: Tuesday energy.</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep2-perpetual-monday-machine.mp3" type="audio/mpeg" length="6815031"/>
+      <guid isPermaLink="false">poopy-ep-002</guid>
+      <pubDate>Sat, 08 Nov 2026 09:00:00 -0800</pubDate>
+      <itunes:duration>456</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+    <item>
+      <title>Ep. 3 — The Fun Permit Office</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>Doctor Robotnik tries to permit away all fun with Form 27-B — and drowns in his own self-filing paperwork.</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep3-fun-permit-office.mp3" type="audio/mpeg" length="7073245"/>
+      <guid isPermaLink="false">poopy-ep-003</guid>
+      <pubDate>Sun, 09 Nov 2026 07:50:00 -0800</pubDate>
+      <itunes:duration>482</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+    <item>
+      <title>Ep. 4 — The Robotnik Repeaters</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>Eight clones of Doctor Robotnik, one maximum-goof duplication machine, a blanket-fort pizza party, and a ninth Robotnik loose somewhere in town.</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep4-robotnik-repeaters.mp3" type="audio/mpeg" length="8341638"/>
+      <guid isPermaLink="false">poopy-ep-004</guid>
+      <pubDate>Sun, 09 Nov 2026 08:35:00 -0800</pubDate>
+      <itunes:duration>579</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+    <item>
+      <title>Ep. 5 — The Duck Situation</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>Robotnik number nine — the one competent copy — trains forty ducks for Operation Featherstorm, then learns that evil things do not wait for baby ducks stuck in drains. Ten-for-ten giggle confirmed.</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep5-duck-situation.mp3" type="audio/mpeg" length="16300451"/>
+      <guid isPermaLink="false">poopy-ep-005</guid>
+      <pubDate>Sun, 09 Nov 2026 18:25:00 -0800</pubDate>
+      <itunes:duration>679</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+    <item>
+      <title>Ep. 6 — The Great Sneak Retirement</title>
+      <link>https://kinbondjoy.pw/stories/poopy.html</link>
+      <description>Robotnik number nine has been doing secret good deeds for four days — and a new friend, Momo the museum monkey who sees EVERYTHING, teaches him that sneaking is better with a friend. Plus: three baby ducks, one catastrophic naming error, and a first word nobody was ready for.</description>
+      <enclosure url="https://kinbondjoy.pw/audio/poopy-and-friends-ep6-great-sneak-retirement.mp3" type="audio/mpeg" length="18926070"/>
+      <guid isPermaLink="false">poopy-ep-006</guid>
+      <pubDate>Sun, 09 Nov 2026 19:55:00 -0800</pubDate>
+      <itunes:duration>789</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
+  </channel>
+</rss>
