@@ -126,5 +126,16 @@
       <itunes:duration>352</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
+    <item>
+      <title>Ep. 11 — Dr. Gok Gets Poked (And Kiki Arrives!)</title>
+      <link>https://kinbondjoy.pw/stories/jungle-park.html</link>
+      <description>Dr. Gok throws his back out building his newest machine, and only tiny pins can save him. Meeting Kiki, the park&#x27;s new goldendoodle comfort specialist! Learning layer: calm breathing counts 1-10 and how acupuncture helps the body heal.</description>
+      <itunes:image href="https://kinbondjoy.pw/audio/jungle-park/icons/jungle-park-ep11-icon.png"/>
+      <enclosure url="https://kinbondjoy.pw/audio/jungle-park/jungle-park-ep11-dr-gok-gets-poked.mp3" type="audio/mpeg" length="11340111"/>
+      <guid isPermaLink="false">jungle-park-ep11</guid>
+      <pubDate>Sat, 14 Nov 2026 08:40:00 -0800</pubDate>
+      <itunes:duration>472</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
   </channel>
 </rss>
