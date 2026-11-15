@@ -137,5 +137,16 @@
       <itunes:duration>535</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
+    <item>
+      <title>Ep. 12 — The Grandest Video Call</title>
+      <link>https://kinbondjoy.pw/stories/jungle-park.html</link>
+      <description>Jungle Park moved to a new home with more rain and more space — and the park&#x27;s first video call brings Grandma Rosa back, whose kids and grandkids always come first. Dancing, crafts, and pink are just how she loves them. Even Dr. Gok joins the craft circle! Learning layer: dance counting (5-6-7-8!) and simple patterns.</description>
+      <itunes:image href="https://kinbondjoy.pw/audio/jungle-park/icons/jungle-park-ep12-icon.png"/>
+      <enclosure url="https://kinbondjoy.pw/audio/jungle-park/jungle-park-ep12-grandest-video-call.mp3" type="audio/mpeg" length="12949463"/>
+      <guid isPermaLink="false">jungle-park-ep12</guid>
+      <pubDate>Sat, 14 Nov 2026 19:40:00 -0800</pubDate>
+      <itunes:duration>540</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
   </channel>
 </rss>
