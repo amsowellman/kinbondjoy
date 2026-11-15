@@ -7,11 +7,11 @@
     <description>The greatest theme park in the jungle (maybe the only one). Family-made audio comedy with a full voice cast, a counting lesson in every episode, and one very sticky opossum. New episodes appear automatically.</description>
     <language>en-us</language>
     <itunes:author>KinBondJoy Family Studio</itunes:author>
-    <itunes:image href="https://kinbondjoy.pw/audio/jungle-park/jungle-park-series-cover.jpg"/>
+    <itunes:image href="https://kinbondjoy.pw/audio/jungle-park/jungle-park-series-icon.png"/>
     <itunes:category text="Kids &amp; Family"/>
     <itunes:explicit>false</itunes:explicit>
     <image>
-      <url>https://kinbondjoy.pw/audio/jungle-park/jungle-park-series-cover.jpg</url>
+      <url>https://kinbondjoy.pw/audio/jungle-park/jungle-park-series-icon.png</url>
       <title>Jungle Park</title>
       <link>https://kinbondjoy.pw/stories/jungle-park.html</link>
     </image>
